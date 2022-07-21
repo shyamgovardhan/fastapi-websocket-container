@@ -4,6 +4,8 @@ from typing import List
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 
+from os import getenv
+
 app = FastAPI()
 
 html = """
@@ -24,7 +26,7 @@ html = """
         <script>
             var client_id = Date.now()
             document.querySelector("#ws-id").textContent = client_id;
-            var ws = new WebSocket(`ws://localhost:8080/ws/${client_id}`);
+            var ws = new WebSocket(`{{SERVER_ADDRESS}}/ws/${client_id}`);
             ws.onmessage = function(event) {
                 var messages = document.getElementById('messages')
                 var message = document.createElement('li')
@@ -68,6 +70,12 @@ manager = ConnectionManager()
 
 @app.get("/")
 async def get():
+    # We now need a SERVER_ADDRESS env var on Cloud Run.
+    # Remember it'll favour tls so format will be:
+    # wss://<cloudrun_url>:443
+    address = getenv("SERVER_ADDRESS", "ws://0.0.0.0:8080")
+    global html 
+    html = html.replace("{{SERVER_ADDRESS}}", address)
     return HTMLResponse(html)
 
 
